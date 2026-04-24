@@ -1,48 +1,57 @@
 import streamlit as st
-
 import pandas as pd
-
 from groq import Groq
-import os
 
-# Add Page Config
-
-st.set_page_config(
-    page_title="GenAI Ads Analyzer",
-    page_icon="📊",
-    layout="wide"
-)
-
-# Clean Header Section
+# --- Page Config ---
+st.set_page_config(page_title="GenAI Ads Analyzer", layout="wide")
 
 st.title("📊 GenAI Google Ads Analyzer")
-st.caption("Analyze campaign performance and get AI-powered insights")
+st.caption("Analyze campaign performance with AI insights")
 
-st.divider()
-
-uploaded_file = st.file_uploader("📁 Upload your Google Ads CSV file", type=["csv"])
-
-
+# --- API Key ---
+if "GROQ_API_KEY" not in st.secrets:
+    st.error("API key missing. Add GROQ_API_KEY in Streamlit secrets.")
+    st.stop()
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-st.title("📊 GenAI Google Ads Analyzer")
+# --- AI Function ---
+def generate_insights(summary, question):
+    prompt = f"""
+    You are a digital marketing expert.
 
-st.write("Upload your Google Ads CSV file to analyze performance.")
+    Here is Google Ads data:
+    {summary}
+
+    User Question:
+    {question}
+
+    Provide:
+    1. Answer
+    2. Reason (why this is happening)
+    3. Recommended actions (solutions)
+    """
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    return response.choices[0].message.content
 
 
-
-uploaded_file = st.file_uploader("Upload CSV", type=["csv"])
+# --- File Upload ---
+uploaded_file = st.file_uploader("📁 Upload your Google Ads CSV", type=["csv"])
 
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
 
-    # --- Calculate metrics ---
+    # --- Metrics ---
     df["CTR"] = df["Clicks"] / df["Impressions"].replace(0, 1)
     df["CPC"] = df["Cost"] / df["Clicks"].replace(0, 1)
     df["Conversion Rate"] = df["Conversions"] / df["Clicks"].replace(0, 1)
 
-    # --- Create summary ---
+    # --- Summary ---
     summary = {
         "total_clicks": int(df["Clicks"].sum()),
         "total_cost": float(df["Cost"].sum()),
@@ -51,23 +60,55 @@ if uploaded_file:
         "average_cpc": float(df["CPC"].mean()),
     }
 
-    # 👉 🔥 PUT YOUR METRICS CODE RIGHT HERE 👇
+    # --- Top/Worst Campaign ---
+    top_campaign = df.sort_values(by="Conversions", ascending=False).iloc[0]["Campaign"]
+    worst_campaign = df.sort_values(by="Conversions", ascending=True).iloc[0]["Campaign"]
+
+    summary["top_campaign"] = top_campaign
+    summary["worst_campaign"] = worst_campaign
+
+    # --- UI: Metrics ---
+    st.subheader("📈 Performance Summary")
 
     col1, col2, col3 = st.columns(3)
-
-    col1.metric("Total Clicks", summary["total_clicks"])
-    col2.metric("Total Cost", f"${summary['total_cost']:.2f}")
+    col1.metric("Clicks", summary["total_clicks"])
+    col2.metric("Cost", f"${summary['total_cost']:.2f}")
     col3.metric("Conversions", summary["total_conversions"])
 
     col4, col5 = st.columns(2)
-
     col4.metric("Avg CTR", f"{summary['average_ctr']:.2%}")
     col5.metric("Avg CPC", f"${summary['average_cpc']:.2f}")
 
+    # --- Campaign Insight ---
+    st.subheader("📌 Campaign Insights")
+    col1, col2 = st.columns(2)
+    col1.success(f"🏆 Top Campaign: {top_campaign}")
+    col2.error(f"⚠️ Needs Improvement: {worst_campaign}")
 
-with st.expander("🔍 View Processed Data"):
-    st.dataframe(df)
+    # --- Auto AI Analysis (IMPORTANT PART) ---
+    st.subheader("🤖 AI Performance Analysis")
 
+    if st.button("Generate Full Analysis"):
+        with st.spinner("Analyzing..."):
+            auto_question = "Give full performance analysis of this ad account"
+            result = generate_insights(summary, auto_question)
 
+        st.markdown("### 📊 AI Insights")
+        st.write(result)
 
+    # --- User Question (Chat Feature) ---
+    st.subheader("💬 Ask Questions")
 
+    question = st.text_input("Ask something about your ads")
+
+    if st.button("Get Answer"):
+        if question:
+            with st.spinner("Thinking..."):
+                result = generate_insights(summary, question)
+
+            st.markdown("### 🤖 AI Answer")
+            st.write(result)
+
+    # --- Data Table ---
+    with st.expander("🔍 View Data"):
+        st.dataframe(df)
