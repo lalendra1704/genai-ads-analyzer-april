@@ -64,17 +64,41 @@ print(summary)
 # --- GenAI Function ---
 def generate_insights(summary, question):
     prompt = f"""
-    You are a digital marketing expert.
+    You are a senior performance marketing analyst.
 
-    Analyze this Google Ads performance summary:
+    Analyze the following Google Ads data carefully.
 
+    DATA:
     {summary}
 
 
     User question:
     {question}
 
-    Answer clearly and give actionable advice.
+    Your response MUST follow this structure:
+
+    1. 📊 Key Findings
+    - Identify important trends from the data
+    - Mention specific metrics (CTR, CPC, conversions)
+
+    2. ⚠️ Problems / Issues
+    - Clearly explain what is going wrong
+    - Be specific (low CTR, high CPC, poor conversions)
+
+    3. 🧠 Reasons (Why)
+    - Explain WHY these problems might be happening
+    - Use marketing logic (targeting, ad copy, competition)
+
+    4. 🚀 Recommendations (Actions)
+    - Give clear, practical steps
+    - Not generic advice
+    - Focus on improving performance
+
+    5. 🎯 Priority Actions
+    - Top 2–3 things to do immediately
+
+    Keep answer concise but insightful.
+    Avoid generic statements.
     """
 
    
