@@ -1,4 +1,9 @@
 pandas
 numpy
 openai
+groq
 python-dotenv
+pandas
+streamlit
+python-dotenv
+groq
