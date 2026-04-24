@@ -13,7 +13,17 @@ if "GROQ_API_KEY" not in st.secrets:
     st.error("API key missing. Add GROQ_API_KEY in Streamlit secrets.")
     st.stop()
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+import os
+
+api_key = os.getenv("GROQ_API_KEY")
+
+if not api_key:
+    st.error("API key not found. Set it in Azure environment variables.")
+    st.stop()
+
+client = Groq(api_key=api_key)
 
 # --- AI Function ---
 def generate_insights(summary, question):
